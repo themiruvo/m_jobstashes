@@ -29,7 +29,7 @@ Other stuff that changed while I was at it:
 3. Add it to your `server.cfg` after its dependencies:
    ```
    ensure ox_lib
-   ensure qbx_core
+   ensure yourframework
    ensure ox_inventory
    ensure m-jobstashes
    ```
