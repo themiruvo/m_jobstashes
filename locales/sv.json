@@ -1,0 +1,6 @@
+{
+  "open_prompt": "[%s] Öppna %s",
+  "stash": "förråd",
+  "default_label": "Jobbförråd: %s",
+  "keybind": "Öppna jobbförråd"
+}

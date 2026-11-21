@@ -1,0 +1,6 @@
+{
+  "open_prompt": "[%s] Open %s",
+  "stash": "stash",
+  "default_label": "Job stash: %s",
+  "keybind": "Open job stash"
+}
