@@ -21,11 +21,20 @@ end
 
 function Integrations.Resolve(kind, setting)
   local list = Integrations.registered[kind] or {}
+  Integrations.active[kind] = nil
   if setting == false or setting == 'none' then return nil end
 
   if setting and setting ~= 'auto' then
     for _, impl in ipairs(list) do
-      if impl.name == setting then Integrations.active[kind] = impl return impl end
+      if impl.name == setting then
+        if impl.manual or isStarted(impl.resource) then
+          Integrations.active[kind] = impl
+          return impl
+        end
+        print(('^1[%s] %s "%s" requires resource "%s"^0'):format(
+          GetCurrentResourceName(), kind, impl.name, impl.resource))
+        return nil
+      end
     end
     print(('^1[%s] %s "%s" is not supported. Options: %s^0'):format(
       GetCurrentResourceName(), kind, tostring(setting), Integrations.Names(kind)))
@@ -33,7 +42,10 @@ function Integrations.Resolve(kind, setting)
   end
 
   local sorted = { table.unpack(list) }
-  table.sort(sorted, function(a, b) return a.priority > b.priority end)
+  table.sort(sorted, function(a, b)
+    if a.priority == b.priority then return a.name < b.name end
+    return a.priority > b.priority
+  end)
   for _, impl in ipairs(sorted) do
     if not impl.manual and isStarted(impl.resource) then
       Integrations.active[kind] = impl

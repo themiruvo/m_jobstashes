@@ -1,28 +1,73 @@
-local function isInt(v, min)
-  return type(v) == 'number' and math.type(v) == 'integer' and v >= min
+Stashes = {}
+
+local function isText(value)
+  return type(value) == 'string' and value:find('%S') ~= nil
 end
 
-function ValidateStash(id, s)
-  if type(id) ~= 'string' then
-    return { ('Config.locations key %s must be a string, e.g. [\'police_stash\']'):format(tostring(id)) }
-  end
-  if type(s) ~= 'table' then
-    return { ('Config.locations[%q] must be a table'):format(id) }
+function Stashes.IsFinite(value)
+  return type(value) == 'number' and value > -math.huge and value < math.huge
+end
+
+local function whole(value, minimum)
+  return type(value) == 'number' and math.tointeger(value) ~= nil and value >= minimum
+end
+
+local function normalizeStash(id, data)
+  if not isText(id) then return nil, { 'Config.locations keys must be nonblank strings' } end
+  if type(data) ~= 'table' then
+    return nil, { ('Config.locations[%q] must be a table'):format(id) }
   end
 
   local problems = {}
-  local function bad(field, why, got)
-    problems[#problems + 1] = ('Config.locations[%q].%s %s (got %s)'):format(id, field, why, tostring(got))
+  local function check(field, ok, reason)
+    if not ok then problems[#problems + 1] = ('Config.locations[%q].%s %s'):format(id, field, reason) end
   end
 
-  if type(s.job) ~= 'string' or s.job == '' then bad('job', 'must be a job name like "police"', s.job) end
-  if type(s.pos) ~= 'vector3' then bad('pos', 'must be vector3(x, y, z)', s.pos) end
-  if s.minGrade ~= nil and not isInt(s.minGrade, 0) then bad('minGrade', 'must be a whole number >= 0', s.minGrade) end
-  if s.slots ~= nil and not isInt(s.slots, 1) then bad('slots', 'must be a whole number >= 1', s.slots) end
-  if s.stashweight ~= nil and not (type(s.stashweight) == 'number' and s.stashweight > 0) then
-    bad('stashweight', 'must be a number > 0 (grams)', s.stashweight)
-  end
-  if s.label ~= nil and type(s.label) ~= 'string' then bad('label', 'must be text', s.label) end
+  local pos = data.pos
+  check('job', isText(data.job), 'must be a nonblank job name')
+  check('pos', type(pos) == 'vector3' and Stashes.IsFinite(pos.x) and Stashes.IsFinite(pos.y)
+    and Stashes.IsFinite(pos.z), 'must be a vector3 with finite coordinates')
+  check('minGrade', data.minGrade == nil or whole(data.minGrade, 0), 'must be a whole number >= 0')
+  check('slots', data.slots == nil or whole(data.slots, 1), 'must be a whole number >= 1')
+  check('stashweight', data.stashweight == nil or (Stashes.IsFinite(data.stashweight)
+    and data.stashweight > 0), 'must be a finite number > 0 (grams)')
+  check('label', data.label == nil or isText(data.label), 'must be nonblank text')
+  if #problems ~= 0 then return nil, problems end
 
-  return problems
+  return {
+    id = id,
+    job = data.job,
+    pos = pos,
+    minGrade = math.tointeger(data.minGrade or 0),
+    slots = math.tointeger(data.slots or 50),
+    stashweight = data.stashweight or 50000,
+    label = data.label,
+  }
+end
+
+function Stashes.Build(locations)
+  if type(locations) ~= 'table' then return {}, { 'Config.locations must be a table' } end
+
+  local catalog, warnings = {}, {}
+  for id, data in pairs(locations) do
+    local stash, problems = normalizeStash(id, data)
+    if stash then
+      catalog[#catalog + 1] = stash
+    else
+      for _, problem in ipairs(problems) do warnings[#warnings + 1] = problem end
+    end
+  end
+
+  table.sort(catalog, function(a, b) return a.id < b.id end)
+  table.sort(warnings)
+  return catalog, warnings
+end
+
+function Stashes.NormalizeJob(job)
+  if type(job) ~= 'table' or not isText(job.name) then return nil end
+  local grade = job.grade
+  if type(grade) == 'table' then grade = grade.level end
+  if type(grade) == 'string' then grade = tonumber(grade) end
+  if not whole(grade, 0) then return nil end
+  return { name = job.name, grade = math.tointeger(grade) }
 end

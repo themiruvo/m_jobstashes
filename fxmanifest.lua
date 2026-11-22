@@ -20,7 +20,9 @@ shared_scripts {
 
 client_scripts {
   'configuration/frameworks/**/client.lua',
-  'configuration/editable/client.lua',
+  'configuration/frameworks/custom/custom.lua',
+  'configuration/bridge/client.lua',
+  'source/client/selection.lua',
   'source/client/main.lua',
 }
 
