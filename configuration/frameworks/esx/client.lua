@@ -1,7 +1,7 @@
 local job
 
 local function setJob(j)
-  job = j and j.name and { name = j.name, grade = j.grade or 0 } or nil
+  job = Stashes.NormalizeJob(j)
 end
 
 Integrations.Register('framework', 'esx', {

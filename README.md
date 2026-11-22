@@ -2,7 +2,7 @@
 
 Job stashes for ox_inventory. You put a stash somewhere on the map, give it a job and a minimum grade, and only people with that job can open it. That's pretty much it.
 
-This started as an old script of mine that honestly wasn't great. The access check only lived in my own event, so anyone with a mod menu could open any stash straight through ox_inventory. That's fixed now, ox_inventory itself checks the job, grade and distance every time someone opens a stash, so there's nothing in this resource left to abuse.
+ox_inventory checks the job, grade, and distance on the server when a player opens a stash. Client-side checks control markers and prompts.
 
 Other stuff that changed while I was at it:
 
@@ -23,7 +23,7 @@ Other stuff that changed while I was at it:
 
 1. Download the latest release, or clone the repo:
    ```
-   git clone https://github.com/themiruvo/m-jobstashes.git
+   git clone https://github.com/themiruvo/m_jobstashes.git m-jobstashes
    ```
 2. Put the `m-jobstashes` folder in your resources.
 3. Add it to your `server.cfg` after its dependencies:
@@ -65,7 +65,11 @@ Config.locations = {
 
 `pos` and `job` are required, the rest is optional. Give your stashes proper names like `police_main` instead of `stash1` so they don't clash with stashes from other scripts.
 
-`Config.Framework` only decides who can see the markers. Who can actually open a stash is always checked by ox_inventory on the server, whatever you set here.
+`Config.Framework` controls marker visibility. Automatic detection prefers Qbox, then QBCore, then ESX. If the selected framework is unavailable at startup, the resource logs a warning and hides markers. Use `false` or `'none'` to explicitly show markers to everyone. Stash access remains subject to ox_inventory's server-side checks.
+
+When multiple stashes overlap, the prompt and open key select the nearest stash the player can use. The key checks the player's current job and distance again before opening it.
+
+Invalid stash entries are skipped individually. A registration error is logged against the stash ID while the server continues to register the other entries. Stashes are registered again after an ox_inventory restart.
 
 ## Changing the text UI
 
@@ -78,3 +82,7 @@ Copy `locales/en.json`, translate it, save it as something like `locales/de.json
 ## Problems
 
 Open an issue and include your framework, your ox_inventory version and whatever the server console says when the script starts.
+
+## Contributing
+
+Run `lua tests/run.lua` with Lua 5.4 from the repository root. The tests use stubs for FiveM and ox_inventory to check configuration normalization, stash selection, and registration recovery.

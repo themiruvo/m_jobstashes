@@ -1,11 +1,7 @@
 local job
 
 local function set(playerData)
-  local j = playerData and playerData.job
-  job = j and j.name and {
-    name = j.name,
-    grade = type(j.grade) == 'table' and (j.grade.level or 0) or (j.grade or 0),
-  } or nil
+  job = Stashes.NormalizeJob(type(playerData) == 'table' and playerData.job)
 end
 
 Integrations.Register('framework', 'qbox', {
